@@ -24,4 +24,12 @@ To-do:
 - Stakeholder meeting pending 06/02 to discuss UI design, brand voice, and functionality.
 
 Wishlist:
-- Create ODBC API connection directly to database to allow for querying without running standalone queries.
+<s>- Create ODBC API connection directly to database to allow for querying without running standalone queries.</s>
+<b> Determined SQL contains too many search variables for end users to properly integrate API database connection to run SQL natively within application to fit </b>
+<b> time constraints. Determined "nice to have" not "need to have." May revisit API & SQL integration in the future. </b>
+<b> This would necessitate:
+  - creating fields and variables for: submission date, pay period end date, effective date, submission ID, member ID, member SSN, money type, etc., for both
+  submission and recordkeeping data
+  - the ability to change SQL search criteria; EG "between, in, equals, greater than, less than," etc.
+
+  End users are currently trained to manipulate query syntax to allow for customizable searches. May change for new trainees.</b>
