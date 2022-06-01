@@ -1,0 +1,104 @@
+--RECORDKEEPING
+select concat(a.prfx_cd,a.cntr_nmbr)            as "Contract"
+,       a.mbr_id                                as "Member ID"
+,       replace(c.MBR_SS_NMBR, '-', '')         as "SSN"
+,       a.py_prd_end_dt                         as "Pay Period"
+,       a.MBR_TRNS_EFCTV_DT                     as "Effective Date"
+,       a.PRCS_DT                               as "Cycle Date"
+,       a.sit_cd                                as "SIT Code"
+,       b.SIT_60_TXT                            as "Transaction Type"
+,       a.LN_ID_NMBR                            as "Loan ID"
+,       CASE
+        WHEN a.sit_cd = 31 then '999'
+        else trim(a.pln_cntrb_id) end           as "Contribution ID"
+,       CASE
+        WHEN a.sit_cd = 31 then 'Loan Repayment'
+        else trim(d.GRP_MIX29_NM) end           as "Contribution Type"
+,       sum(a.trns_amt)                         as "Submission Amount"
+,       a.RQST_NMBR                             as "Request Number"
+,       a.RQST_SUBTYPE_CD                       as "Subtype"
+,       coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD)        as "Request Medium"
+,       CASE
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 1 then 'Fax'
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 15 then 'Manual'
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 19 then 'RSC Trans Internet'
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 21 then 'ER Internet'
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 17 then 'Auto-Built'
+        WHEN coalesce(e.ENVLP_MEDIUM_CD,
+                      g.ENVLP_MEDIUM_CD) = 11 then 'Mail'
+        ELSE NULL END                            as "Medium Type"
+
+FROM db2.TABLE_NAME a
+--Situation Code English Table
+left join QRY.TABLE_NAME b
+        on a.sit_cd = b.sit_cd
+--Member SSN Table
+left join DB2.TABLE_NAME c
+     on a.mbr_id = c.mbr_id
+        and a.prfx_cd = c.prfx_cd
+        and a.cntr_nmbr = c.cntr_nmbr
+--Request Info Table
+left join db2.TABLE_NAME e
+        on e.REQUEST_NMBR = a.rqst_nmbr
+                and e.CONTRACT_PRFX_ID = a.prfx_cd
+                and e.CONTRACT_NMBR = a.cntr_nmbr
+--Contribution Type English Table
+left join db2.TABLE_NAME d
+        on a.prfx_cd=d.prfx_cd
+                and a.cntr_nmbr=d.cntr_nmbr
+                and a.pln_cntrb_id=d.plan_cntrb_id
+--Archived Express Data
+left join DB2.TABLE_NAME g
+        on a.prfx_cd=g.contract_prfx_id
+                and a.cntr_nmbr=g.contract_nmbr
+                and a.rqst_nmbr=g.request_nmbr
+--CRITERIA: CONTRACT PREFIX
+WHERE a.PRFX_CD   = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE
+AND a.CNTR_NMBR in ()
+--CRITERIA: SITUATION CODES. PAYROLL SITUATION CODES ARE: 1 = Contribution, 31 = Loan Repayment, 518 = Forfeiture Credit, 548 = Negative Contribution
+and a.SIT_CD in (1,31,518,548)
+--CRITERIA: MEMBER ID
+-- and a.MBR_ID in ()
+--CRITERIA: MEMBER SSN. FORMAT: 9 DIGIT WITHOUT HYPHENS
+-- and replace(c.MBR_SS_NMBR,'-','') in ()
+--CRITERIA: PLAN CONTRIBUTION ID
+-- and a.PLN_CNTRB_ID in ()
+--CRITERIA: CYCLE DATE
+-- and a.PRCS_DT > ''
+--CRITERIA: PAY PERIOD END DATE
+-- and a.py_prd_end_dt between '' and ''
+--CRITERIA: LOAN RECORDKEEPING ID
+-- and a.ln_id_nmbr in ()
+--CRITERIA: REQUEST MEDIUM CODE. OPTIONS: 1 = FAX, 15 = MANUAL,
+--19 = RSC TRANS INTERNET, 21 = ER INTERNET, 17 = AUTOBUILT, 11 = MAIL
+-- and coalesce(e.ENVLP_MEDIUM_CD,g.ENVLP_MEDIUM_CD) in ()
+--CRITERIA: Recordkeeping effective date. Format: 'MM/DD/YYYY'
+ and a.MBR_TRNS_EFCTV_DT between '' and ''
+--CRITERIA: RECORDKEEPING REQUEST NUMBER
+-- and a.rqst_nmbr in ()
+--CRITERIA: RECORDKEEPING REQUEST SUBTYPE. PAYROLL OPTIONS: 10119 = ER Contribution & Loan, 10101 = Manual Contribution & Loan, 10104 = Recordkeeping Loan Payment, Cont.
+--10109 = Forfeiture Credit, 10107 = Negative Contribution, 201207 = Accounting Mistake of Fact Refund
+-- and a.RQST_SUBTYPE_CD in ()
+and coalesce(e.ENVLP_MEDIUM_CD,g.ENVLP_MEDIUM_CD) not in (19, 11)
+
+GROUP BY a.mbr_id,c.MBR_SS_NMBR,a.MBR_TRNS_EFCTV_DT,a.sit_cd
+        ,b.sit_60_txt,a.ln_id_nmbr,a.pln_cntrb_id,d.GRP_MIX29_NM
+        ,a.RQST_NMBR,a.PRCS_DT,a.py_prd_end_dt,a.prfx_cd,a.cntr_nmbr
+        ,a.RQST_SUBTYPE_CD,coalesce(e.ENVLP_MEDIUM_CD,g.ENVLP_MEDIUM_CD)
+
+
+ORDER BY
+"Pay Period",
+"Effective Date",
+"SSN",
+"Contribution ID"
+DESC
+
+for fetch only with ur
