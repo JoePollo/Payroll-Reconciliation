@@ -10,6 +10,8 @@ Queries for data sets are via:
 2. Transactional Recordkeeping.sql
 3. Financial Backend.sql
 
+Test files used during development can be found in the Excel folder.
+
 This program provides cost saving upwards of $225,000 per annum and reduces the ETA for the analysis process from 2 weeks to 2 days.
 The process moving to automation also reduces points of failure with end users, which creates redistributable results without worry of error.
 In summary: client relations improved greatly, reduces labor overhead, improves turn around time, and saves hundreds of thousands of dollars yearly.
