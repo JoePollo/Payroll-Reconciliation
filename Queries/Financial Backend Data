@@ -1,0 +1,187 @@
+--Accounting Query
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        CASE
+        WHEN a.MBR_ID <> 0
+        THEN 'MOF'
+        ELSE 'Client MOF'
+        END                                 as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--MOF
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (9)
+and ACNT_ACTIVITY_CD in (1)
+
+union all
+
+--Finance Negatives
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        'Finance Negative'                  as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--Finance negatives
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (93)
+and ACNT_ACTIVITY_CD in (850)
+
+union all
+
+--Wire Received
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        'Client Wire'                       as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--Wires
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (17)
+and ACNT_ACTIVITY_CD in (850)
+and a.MBR_ID = 0
+
+union all
+
+--ACH Received
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        'Client ACH'                        as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--ACHs
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (21)
+and ACNT_ACTIVITY_CD in (1)
+and a.MBR_ID = 0
+
+union all
+
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        'Date Change'                       as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--Date Changes
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (0)
+and ACNT_ACTIVITY_CD in (850)
+and TRNS_REASON_CD in (461)
+
+union all
+
+select distinct
+        concat(a.PRFX_CD,a.CNTR_NMBR)       as "Contract",
+        replace(b.E_EMP_ID,'-','')          as "SSN",
+        a.MBR_ID                            as "Member ID",
+        a.EFCTV_DT                          as "Effective Date",
+        a.PRCS_DT                           as "Process Date",
+        'Negative Cash'                       as "Transaction Category",
+        a.TRNS_AMT                          as "Cash Amount"
+
+--Negative Cash
+from DB2.TABLE_NAME a
+left join db2.TABLE_NAME b
+        on a.PRFX_CD=b.CONTRACT_PRFX_ID
+                and a.CNTR_NMBR=b.CONTRACT_NMBR
+                and a.MBR_ID=b.MBR_ID
+--CRITERIA: CONTRACT PREFIX. FORMAT: '1'
+where prfx_cd = ''
+--CRITERIA: CONTRACT 5 DIGIT CODE. FORMAT: 12345
+and cntr_nmbr =
+--CRITERIA: EFFECTIVE DATE. FORMAT: 'MM/DD/YYYY'
+-- and EFCTV_DT between '' and ''
+--CRITERIA: PROCESS DATE. FORMAT: 'MM/DD/YYYY'
+-- and PRCS_DT between '' and ''
+--DO NOT CHANGE BELOW VALUES
+and CASH_ORIGIN_CD in (3)
+and ACNT_ACTIVITY_CD in (1)
+and TRNS_REASON_CD in (472)
+
+order by "Effective Date" asc
+
+for fetch only with ur
