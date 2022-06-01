@@ -1,0 +1,653 @@
+--Submission Query
+--Contribution Original
+SELECT DISTINCT
+concat(a.PRFX_CD,a.CNTR_NMBR)                   as "Contract",
+char(b.SBMSN_ID)                                as "Submission ID",
+date(b.SBMSN_ID)                                as "Submission Date",
+a.PAY_PRD_END_DT                                as "Pay Period",
+COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)                                 as "Effective Date",
+COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)                                 as "Request Number",
+COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))                    as "SSN",
+COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))                                 as "Member ID",
+CASE
+WHEN
+d.MBR_MID_INTL_NM is NULL
+THEN
+CONCAT(
+CONCAT(TRIM(d.MBR_FRST_NM),
+' '),
+TRIM(d.MBR_LST_NM))
+ELSE
+CONCAT(
+CONCAT(
+CONCAT(
+CONCAT(
+TRIM(d.MBR_FRST_NM),' '),
+TRIM(d.MBR_MID_INTL_NM)),' ')
+,TRIM(d.MBR_LST_NM))
+END                                             as "Member Name",
+trim(b.PLN_CNTRB_ID)                            as "Contribution ID",
+trim(e.GRP_MIX29_NM)                            as "Contribution Type",
+'Original'                                      as "Submission Type",
+b.CNTRB_AMT                                     as "Submission Amount",
+SUM(0)                                          as "MOF Amount"
+
+FROM --a
+--Generic Submission Scratch || PARENT
+db2.TABLE_NAME a
+LEFT JOIN --b
+--Contribution Submission Original Amount Scratch || CHILD
+--Linked via table A
+db2.TABLE_NAME b
+        ON a.PRFX_CD = b.PRFX_CD
+        AND a.CNTR_NMBR = b.CNTR_NMBR
+        AND a.SBMSN_ID = b.SBMSN_ID
+        AND a.MBR_GRPCTGRY_CD = b.MBR_GRPCTGRY_CD
+        AND a.MBR_GRPINSTC_NMBR = b.MBR_GRPINSTC_NMBR
+        AND a.DATA_CTGRY_PRCS_CD = b.DATA_CTGRY_PRCS_CD
+        AND a.DATA_CTGRY_PRCS_TS = b.DATA_CTGRY_PRCS_TS
+LEFT JOIN --c
+--Member Scratch via Submission || CHILD
+--Linked via table A & B
+db2.TABLE_NAME c
+        ON b.PRFX_CD = c.PRFX_CD
+        AND b.CNTR_NMBR = c.CNTR_NMBR
+        AND b.SBMSN_ID = c.SBMSN_ID
+        AND b.MBR_ID = c.MBR_ID
+LEFT JOIN --d
+--Member Information || CHILD
+--Linked via table A & B
+db2.TABLE_NAME d
+        ON a.PRFX_CD = d.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = d.CONTRACT_NMBR
+        AND b.MBR_ID = d.MBR_ID
+LEFT JOIN --e
+--Contribution Type English || CHILD
+--Linked via table A & B
+db2.TABLE_NAME e
+        ON a.PRFX_CD = e.PRFX_CD
+        AND a.CNTR_NMBR = e.CNTR_NMBR
+        AND b.PLN_CNTRB_ID = e.PLAN_CNTRB_ID
+LEFT JOIN --f
+--Submission Data Scratch || CHILD
+--Linked via table A & B
+--This table is unused in SELECT clause; it is used to
+--link the request number to tables G and H.
+db2.TABLE_NAME f
+        ON a.PRFX_CD = f.PRFX_CD
+        AND a.CNTR_NMBR = f.CNTR_NMBR
+        AND b.SBMSN_ID = f.SBMSN_ID
+        AND b.MBR_GRPCTGRY_CD = f.MBR_GRPCTGRY_CD
+        AND b.MBR_GRPINSTC_NMBR = f.MBR_GRPINSTC_NMBR
+        AND b.DATA_CTGRY_PRCS_CD = f.DATA_CTGRY_PRCS_CD
+        AND b.DATA_CTGRY_PRCS_TS = f.DATA_CTGRY_PRCS_TS
+LEFT JOIN --g
+--Live request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME g
+        ON a.PRFX_CD = g.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = g.CONTRACT_NMBR
+        AND f.RQST_NMBR = g.REQUEST_NMBR
+LEFT JOIN --h
+--Archived request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME h
+        ON a.PRFX_CD = h.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = h.CONTRACT_NMBR
+        AND f.RQST_NMBR = h.REQUEST_NMBR
+
+--CRITERIA STARTS HERE
+--CRITERIA: Contract Prefix code. Format: '1'
+WHERE a.PRFX_CD = ''
+--CRITERIA: Contract 5 digit code. Format: 12345
+AND a.CNTR_NMBR in ()
+--CRITERIA: Submission ID. Format: 'YYYY-MM-DD-HH.MM.SS.123456'
+-- AND b.SBMSN_ID = ''
+--CRITERIA: Submission Date. Format: 'MM/DD/YYYY'
+-- AND b.SBMSN_ID between timestamp('') and timestamp('')
+--CRITERIA: Pay period end date. Format: 'MM/DD/YYYY'
+-- AND a.PAY_PRD_END_DT = ''
+--CRITERIA: Recordkeeping effective date. Format: 'MM/DD/YYYY'
+--AND COALESCE(g.EFFECTIVE_DT,h.EFFECTIVE_DT) between '' and ''
+--CRITERIA: Member ID. No special formatting.
+-- AND COALESCE(c.MBR_ID,d.MBR_ID) =
+--CRITERIA: Member SSN.
+-- AND COALESCE(REPLACE(d.E_EMP_ID,'-',''),REPLACE(c.E_EMP_ID,'-','')) =
+--DO NOT CHANGE BELOW CODING.
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) is not NULL
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) <> 'FIL'
+
+GROUP BY
+
+concat(a.PRFX_CD,a.CNTR_NMBR)
+,char(b.SBMSN_ID)
+,date(b.SBMSN_ID)
+,a.PAY_PRD_END_DT
+,COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))
+,COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))
+,d.MBR_FRST_NM
+,d.MBR_MID_INTL_NM
+,d.MBR_LST_NM
+,trim(b.PLN_CNTRB_ID)
+,e.GRP_MIX29_NM
+,b.CNTRB_AMT
+,COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)
+,COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)
+
+UNION ALL
+
+--Loan Original
+SELECT DISTINCT
+concat(a.PRFX_CD,a.CNTR_NMBR)                   as "Contract",
+char(b.SBMSN_ID)                                as "Submission ID",
+date(b.SBMSN_ID)                                as "Submission Date",
+a.PAY_PRD_END_DT                                as "Pay Period",
+COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)                                 as "Effective Date",
+COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)                                 as "Request Number",
+COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))                    as "SSN",
+COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))                                 as "Member ID",
+CASE
+WHEN
+d.MBR_MID_INTL_NM is NULL
+THEN
+CONCAT(
+CONCAT(TRIM(d.MBR_FRST_NM),
+' '),
+TRIM(d.MBR_LST_NM))
+ELSE
+CONCAT(
+CONCAT(
+CONCAT(
+CONCAT(
+TRIM(d.MBR_FRST_NM),' '),
+TRIM(d.MBR_MID_INTL_NM)),' ')
+,TRIM(d.MBR_LST_NM))
+END                                             as "Member Name",
+trim('999')                                     as "Contribution ID",
+trim('Loan Repayment')                          as "Contribution Type",
+'Original'                                      as "Submission Type",
+sum(b.PMT_AMT)+
+CASE
+WHEN sum(b.PRIN_PMT_AMT) is NULL
+THEN '0'
+ELSE sum(b.PRIN_PMT_AMT)
+END                                             as "Submission Amount",
+CASE
+WHEN b.MOF_AMT is NULL
+THEN '0'
+ELSE b.MOF_AMT
+END                                             as "MOF Amount"
+
+FROM --a
+--Generic Submission Scratch || PARENT
+db2.TABLE_NAME a
+LEFT JOIN --b
+--Loan Original Amount Scratch || CHILD
+--Linked via table A
+db2.TABLE_NAME b
+        ON a.PRFX_CD = b.PRFX_CD
+        AND a.CNTR_NMBR = b.CNTR_NMBR
+        AND a.SBMSN_ID = b.SBMSN_ID
+        AND a.MBR_GRPCTGRY_CD = b.MBR_GRPCTGRY_CD
+        AND a.MBR_GRPINSTC_NMBR = b.MBR_GRPINSTC_NMBR
+        AND a.DATA_CTGRY_PRCS_CD = b.DATA_CTGRY_PRCS_CD
+        AND a.DATA_CTGRY_PRCS_TS = b.DATA_CTGRY_PRCS_TS
+LEFT JOIN --c
+--Member Scratch via Submission || CHILD
+--Linked via table A & B
+db2.TABLE_NAME c
+        ON b.PRFX_CD = c.PRFX_CD
+        AND b.CNTR_NMBR = c.CNTR_NMBR
+        AND b.SBMSN_ID = c.SBMSN_ID
+        AND b.MBR_ID = c.MBR_ID
+LEFT JOIN --d
+--Member Information || CHILD
+--Linked via table C
+db2.TABLE_NAME d
+        ON a.PRFX_CD = d.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = d.CONTRACT_NMBR
+        AND b.MBR_ID = d.MBR_ID
+--UNUSED FOR LOANS
+-- LEFT JOIN --e
+-- --Contribution Type English || CHILD
+-- --Linked via table A & B
+-- db2.TABLE_NAME e
+--         ON a.PRFX_CD = e.PRFX_CD
+--         AND a.CNTR_NMBR = e.CNTR_NMBR
+--         AND b.PLN_CNTRB_ID = e.PLAN_CNTRB_ID
+LEFT JOIN --f
+--Submission Data Scratch || CHILD
+--Linked via table A
+--This table is unused in SELECT clause; it is used to
+--link the request number to tables G and H.
+db2.TABLE_NAME f
+        ON a.PRFX_CD = f.PRFX_CD
+        AND a.CNTR_NMBR = f.CNTR_NMBR
+        AND b.SBMSN_ID = f.SBMSN_ID
+        AND b.MBR_GRPCTGRY_CD = f.MBR_GRPCTGRY_CD
+        AND b.MBR_GRPINSTC_NMBR = f.MBR_GRPINSTC_NMBR
+        AND b.DATA_CTGRY_PRCS_CD = f.DATA_CTGRY_PRCS_CD
+        AND b.DATA_CTGRY_PRCS_TS = f.DATA_CTGRY_PRCS_TS
+LEFT JOIN --g
+--Live request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME g
+        ON a.PRFX_CD = g.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = g.CONTRACT_NMBR
+        AND f.RQST_NMBR = g.REQUEST_NMBR
+LEFT JOIN --h
+--Archived request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME h
+        ON a.PRFX_CD = h.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = h.CONTRACT_NMBR
+        AND f.RQST_NMBR = h.REQUEST_NMBR
+
+--CRITERIA STARTS HERE
+--CRITERIA: Contract Prefix code. Format: '1'
+WHERE a.PRFX_CD = ''
+--CRITERIA: Contract 5 digit code. Format: 12345
+AND a.CNTR_NMBR in ()
+--CRITERIA: Submission ID. Format: 'YYYY-MM-DD-HH.MM.SS.123456'
+-- AND b.SBMSN_ID = ''
+--CRITERIA: Submission Date. Format: 'MM/DD/YYYY'
+-- AND b.SBMSN_ID between timestamp('') and timestamp('')
+--CRITERIA: Pay period end date. Format: 'MM/DD/YYYY'
+-- AND a.PAY_PRD_END_DT = ''
+--CRITERIA: Recordkeeping effective date. Format: 'MM/DD/YYYY'
+--AND COALESCE(g.EFFECTIVE_DT,h.EFFECTIVE_DT) between '' and ''
+--CRITERIA: Member ID. No special formatting.
+-- AND COALESCE(c.MBR_ID,d.MBR_ID) =
+--CRITERIA: Member SSN.
+-- AND COALESCE(REPLACE(d.E_EMP_ID,'-',''),REPLACE(c.E_EMP_ID,'-','')) =
+--DO NOT CHANGE BELOW CODING.
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) is not NULL
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) <> 'FIL'
+
+GROUP BY
+
+concat(a.PRFX_CD,a.CNTR_NMBR)
+,char(b.SBMSN_ID)
+,date(b.SBMSN_ID)
+,a.PAY_PRD_END_DT
+,COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))
+,COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))
+,d.MBR_FRST_NM
+,d.MBR_MID_INTL_NM
+,d.MBR_LST_NM
+,b.MOF_AMT
+,COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)
+,COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)
+
+UNION ALL
+
+--Contribution Final
+SELECT DISTINCT
+concat(a.PRFX_CD,a.CNTR_NMBR)                   as "Contract",
+char(b.SBMSN_ID)                                as "Submission ID",
+date(b.SBMSN_ID)                                as "Submission Date",
+a.PAY_PRD_END_DT                                as "Pay Period",
+COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)                                 as "Effective Date",
+COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)                                 as "Request Number",
+COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))                    as "SSN",
+COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))                                 as "Member ID",
+CASE
+WHEN
+d.MBR_MID_INTL_NM is NULL
+THEN
+CONCAT(
+CONCAT(TRIM(d.MBR_FRST_NM),
+' '),
+TRIM(d.MBR_LST_NM))
+ELSE
+CONCAT(
+CONCAT(
+CONCAT(
+CONCAT(
+TRIM(d.MBR_FRST_NM),' '),
+TRIM(d.MBR_MID_INTL_NM)),' ')
+,TRIM(d.MBR_LST_NM))
+END                                             as "Member Name",
+trim(b.PLN_CNTRB_ID)                            as "Contribution ID",
+trim(e.GRP_MIX29_NM)                            as "Contribution Type",
+'Final'                                         as "Submission Type",
+b.CNTRB_AMT                                     as "Submission Amount",
+SUM(0)                                          as "MOF Amount"
+
+FROM --a
+--Generic Submission Scratch || PARENT
+db2.TABLE_NAME a
+LEFT JOIN --b
+--Contributon final scratch || CHILD
+--Linked via table A
+db2.TABLE_NAME b
+        ON a.PRFX_CD = b.PRFX_CD
+        AND a.CNTR_NMBR = b.CNTR_NMBR
+        AND a.SBMSN_ID = b.SBMSN_ID
+        AND a.MBR_GRPCTGRY_CD = b.MBR_GRPCTGRY_CD
+        AND a.MBR_GRPINSTC_NMBR = b.MBR_GRPINSTC_NMBR
+        AND a.DATA_CTGRY_PRCS_CD = b.DATA_CTGRY_PRCS_CD
+        AND a.DATA_CTGRY_PRCS_TS = b.DATA_CTGRY_PRCS_TS
+LEFT JOIN --c
+--Member Scratch via Submission || CHILD
+--Linked via table A & B
+db2.TABLE_NAME c
+        ON b.PRFX_CD = c.PRFX_CD
+        AND b.CNTR_NMBR = c.CNTR_NMBR
+        AND b.SBMSN_ID = c.SBMSN_ID
+        AND b.MBR_ID = c.MBR_ID
+LEFT JOIN --d
+--Member Information || CHILD
+--Linked via table A & B
+db2.TABLE_NAME d
+        ON a.PRFX_CD = d.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = d.CONTRACT_NMBR
+        AND b.MBR_ID = d.MBR_ID
+LEFT JOIN --e
+--Contribution Type English || CHILD
+--Linked via table A & B
+db2.TABLE_NAME e
+        ON a.PRFX_CD = e.PRFX_CD
+        AND a.CNTR_NMBR = e.CNTR_NMBR
+        AND b.PLN_CNTRB_ID = e.PLAN_CNTRB_ID
+LEFT JOIN --f
+--Submission Data Scratch || CHILD
+--Linked via table A
+--This table is unused in SELECT clause; it is used to
+--link the request number to tables G and H.
+db2.TABLE_NAME f
+        ON a.PRFX_CD = f.PRFX_CD
+        AND a.CNTR_NMBR = f.CNTR_NMBR
+        AND b.SBMSN_ID = f.SBMSN_ID
+        AND b.MBR_GRPCTGRY_CD = f.MBR_GRPCTGRY_CD
+        AND b.MBR_GRPINSTC_NMBR = f.MBR_GRPINSTC_NMBR
+        AND b.DATA_CTGRY_PRCS_CD = f.DATA_CTGRY_PRCS_CD
+        AND b.DATA_CTGRY_PRCS_TS = f.DATA_CTGRY_PRCS_TS
+LEFT JOIN --g
+--Live request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME g
+        ON a.PRFX_CD = g.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = g.CONTRACT_NMBR
+        AND f.RQST_NMBR = g.REQUEST_NMBR
+LEFT JOIN --h
+--Archived request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME h
+        ON a.PRFX_CD = h.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = h.CONTRACT_NMBR
+        AND f.RQST_NMBR = h.REQUEST_NMBR
+
+--CRITERIA STARTS HERE
+--CRITERIA: Contract Prefix code. Format: '1'
+WHERE a.PRFX_CD = ''
+--CRITERIA: Contract 5 digit code. Format: 12345
+AND a.CNTR_NMBR in ()
+--CRITERIA: Submission ID. Format: 'YYYY-MM-DD-HH.MM.SS.123456'
+-- AND b.SBMSN_ID = ''
+--CRITERIA: Submission Date. Format: 'MM/DD/YYYY'
+-- AND b.SBMSN_ID between timestamp('') and timestamp('')
+--CRITERIA: Pay period end date. Format: 'MM/DD/YYYY'
+-- AND a.PAY_PRD_END_DT = ''
+--CRITERIA: Recordkeeping effective date. Format: 'MM/DD/YYYY'
+--AND COALESCE(g.EFFECTIVE_DT,h.EFFECTIVE_DT) between '' and ''
+--CRITERIA: Member ID. No special formatting.
+-- AND COALESCE(c.MBR_ID,d.MBR_ID) =
+--CRITERIA: Member SSN.
+-- AND COALESCE(REPLACE(d.E_EMP_ID,'-',''),REPLACE(c.E_EMP_ID,'-','')) =
+--DO NOT CHANGE BELOW CODING.
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) is not NULL
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) <> 'FIL'
+
+GROUP BY
+
+concat(a.PRFX_CD,a.CNTR_NMBR)
+,char(b.SBMSN_ID)
+,date(b.SBMSN_ID)
+,a.PAY_PRD_END_DT
+,COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))
+,COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))
+,d.MBR_FRST_NM
+,d.MBR_MID_INTL_NM
+,d.MBR_LST_NM
+,trim(b.PLN_CNTRB_ID)
+,e.GRP_MIX29_NM
+,b.CNTRB_AMT
+,COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)
+,COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)
+
+UNION ALL
+
+--Loan Final
+SELECT DISTINCT
+concat(a.PRFX_CD,a.CNTR_NMBR)                   as "Contract",
+char(b.SBMSN_ID)                                as "Submission ID",
+date(b.SBMSN_ID)                                as "Submission Date",
+a.PAY_PRD_END_DT                                as "Pay Period",
+COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)                                 as "Effective Date",
+COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)                                 as "Request Number",
+COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))                    as "SSN",
+COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))                                 as "Member ID",
+CASE
+WHEN
+d.MBR_MID_INTL_NM is NULL
+THEN
+CONCAT(
+CONCAT(TRIM(d.MBR_FRST_NM),
+' '),
+TRIM(d.MBR_LST_NM))
+ELSE
+CONCAT(
+CONCAT(
+CONCAT(
+CONCAT(
+TRIM(d.MBR_FRST_NM),' '),
+TRIM(d.MBR_MID_INTL_NM)),' ')
+,TRIM(d.MBR_LST_NM))
+END                                             as "Member Name",
+trim('999')                                     as "Contribution ID",
+trim('Loan Repayment')                          as "Contribution Type",
+'Final'                                         as "Submission Type",
+sum(b.PMT_AMT)+
+CASE
+WHEN sum(b.PRIN_PMT_AMT) is NULL
+THEN '0'
+ELSE sum(b.PRIN_PMT_AMT)
+END                                             as "Submission Amount",
+CASE
+WHEN b.MOF_AMT is NULL
+THEN '0'
+ELSE b.MOF_AMT
+END                                             as "MOF Amount"
+
+FROM --a
+--Generic Submission Scratch || PARENT
+db2.TABLE_NAME a
+LEFT JOIN --b
+--Loan submission final scratch || CHILD
+--Linked via table A
+db2.TABLE_NAME b
+        ON a.PRFX_CD = b.PRFX_CD
+        AND a.CNTR_NMBR = b.CNTR_NMBR
+        AND a.SBMSN_ID = b.SBMSN_ID
+        AND a.MBR_GRPCTGRY_CD = b.MBR_GRPCTGRY_CD
+        AND a.MBR_GRPINSTC_NMBR = b.MBR_GRPINSTC_NMBR
+        AND a.DATA_CTGRY_PRCS_CD = b.DATA_CTGRY_PRCS_CD
+        AND a.DATA_CTGRY_PRCS_TS = b.DATA_CTGRY_PRCS_TS
+LEFT JOIN --c
+--Member Scratch via Submission || CHILD
+--Linked via table A & B
+db2.TABLE_NAME c
+        ON b.PRFX_CD = c.PRFX_CD
+        AND b.CNTR_NMBR = c.CNTR_NMBR
+        AND b.SBMSN_ID = c.SBMSN_ID
+        AND b.MBR_ID = c.MBR_ID
+LEFT JOIN --d
+--Member Information || CHILD
+--Linked via table C
+db2.TABLE_NAME d
+        ON a.PRFX_CD = d.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = d.CONTRACT_NMBR
+        AND b.MBR_ID = d.MBR_ID
+--UNUSED FOR LOANS
+-- LEFT JOIN --e
+-- --Contribution Type English || CHILD
+-- --Linked via table A & B
+-- db2.TABLE_NAME e
+--         ON a.PRFX_CD = e.PRFX_CD
+--         AND a.CNTR_NMBR = e.CNTR_NMBR
+--         AND b.PLN_CNTRB_ID = e.PLAN_CNTRB_ID
+LEFT JOIN --f
+--Submission Data Scratch || CHILD
+--Linked via table A
+--This table is unused in SELECT clause; it is used to
+--link the request number to tables G and H.
+db2.TABLE_NAME f
+        ON a.PRFX_CD = f.PRFX_CD
+        AND a.CNTR_NMBR = f.CNTR_NMBR
+        AND b.SBMSN_ID = f.SBMSN_ID
+        AND b.MBR_GRPCTGRY_CD = f.MBR_GRPCTGRY_CD
+        AND b.MBR_GRPINSTC_NMBR = f.MBR_GRPINSTC_NMBR
+        AND b.DATA_CTGRY_PRCS_CD = f.DATA_CTGRY_PRCS_CD
+        AND b.DATA_CTGRY_PRCS_TS = f.DATA_CTGRY_PRCS_TS
+LEFT JOIN --g
+--Live request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME g
+        ON a.PRFX_CD = g.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = g.CONTRACT_NMBR
+        AND f.RQST_NMBR = g.REQUEST_NMBR
+LEFT JOIN --h
+--Archived request table || CHILD
+--Linked via tables A & F
+db2.TABLE_NAME h
+        ON a.PRFX_CD = h.CONTRACT_PRFX_ID
+        AND a.CNTR_NMBR = h.CONTRACT_NMBR
+        AND f.RQST_NMBR = h.REQUEST_NMBR
+
+--CRITERIA STARTS HERE
+--CRITERIA: Contract Prefix code. Format: '1'
+WHERE a.PRFX_CD = ''
+--CRITERIA: Contract 5 digit code. Format: 12345
+AND a.CNTR_NMBR in ()
+--CRITERIA: Submission ID. Format: 'YYYY-MM-DD-HH.MM.SS.123456'
+-- AND b.SBMSN_ID = ''
+--CRITERIA: Submission Date. Format: 'MM/DD/YYYY'
+-- AND b.SBMSN_ID between timestamp('') and timestamp('')
+--CRITERIA: Pay period end date. Format: 'MM/DD/YYYY'
+-- AND a.PAY_PRD_END_DT = ''
+--CRITERIA: Recordkeeping effective date. Format: 'MM/DD/YYYY'
+--AND COALESCE(g.EFFECTIVE_DT,h.EFFECTIVE_DT) between '' and ''
+--CRITERIA: Member ID. No special formatting.
+-- AND COALESCE(c.MBR_ID,d.MBR_ID) =
+--CRITERIA: Member SSN.
+-- AND COALESCE(REPLACE(d.E_EMP_ID,'-',''),REPLACE(c.E_EMP_ID,'-','')) =
+--DO NOT CHANGE BELOW CODING.
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) is not NULL
+AND COALESCE(g.REQUEST_STAT_CD,h.REQUEST_STAT_CD) <> 'FIL'
+
+GROUP BY
+
+concat(a.PRFX_CD,a.CNTR_NMBR)
+,char(b.SBMSN_ID)
+,date(b.SBMSN_ID)
+,a.PAY_PRD_END_DT
+,COALESCE(
+TRIM(
+REPLACE(d.E_EMP_ID,'-','')),
+TRIM(
+REPLACE(c.E_EMP_ID,'-','')))
+,COALESCE(
+TRIM(c.MBR_ID),
+TRIM(d.MBR_ID))
+,d.MBR_FRST_NM
+,d.MBR_MID_INTL_NM
+,d.MBR_LST_NM
+,b.MOF_AMT
+,COALESCE(
+g.REQUEST_NMBR,
+h.REQUEST_NMBR)
+,COALESCE(
+g.EFFECTIVE_DT,
+h.EFFECTIVE_DT)
+
+ORDER BY
+--Descending
+"Submission Date",
+"Pay Period",
+"Effective Date",
+"SSN",
+"Submission Type"
+desc
+
+FOR FETCH only WITH ur
