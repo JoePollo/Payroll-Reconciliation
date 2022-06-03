@@ -23,6 +23,12 @@ To-do:
 - Design summary sheet in workbook to provide dollar amounts across 3 datasets by pairing contract and various system dates.
 - Stakeholder meeting pending 06/02 to discuss UI design, brand voice, and functionality.
 
+<b> Feedback from stakeholder meeting:
+  - Include original submission dollar amount in comparison tab. Difference dollar value in comparison tab needs to be between recordkeeping and final submission dollar amount.
+  - Include tab for participant's with differences.
+  - Mirror end user's template for summary tab (columns).
+  - Wishlist item: integrate query to use effective dates specifically, unlikely due to below bolded section for wishlist. </b>
+
 Wishlist:
 <s>- Create ODBC API connection directly to database to allow for querying without running standalone queries.</s>
 <b> Determined SQL contains too many search variables for end users to properly integrate API database connection to run SQL natively within application to fit </b>
