@@ -21,7 +21,7 @@ non-developer role.
 
 To-do:
 - Design summary sheet in workbook to provide dollar amounts across 3 datasets by pairing contract and various system dates.
-- Stakeholder meeting pending 06/02 to discuss UI design, brand voice, and functionality.
+<s>- Stakeholder meeting pending 06/02 to discuss UI design, brand voice, and functionality.</s>
 
 <b> Feedback from stakeholder meeting:
   - Include original submission dollar amount in comparison tab. Difference dollar value in comparison tab needs to be between recordkeeping and final submission dollar amount.
