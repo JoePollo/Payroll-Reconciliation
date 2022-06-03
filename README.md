@@ -21,6 +21,7 @@ non-developer role.
 
 To-do:
 - Design summary sheet in workbook to provide dollar amounts across 3 datasets by pairing contract and various system dates.
+
 <s>- Stakeholder meeting pending 06/02 to discuss UI design, brand voice, and functionality.</s>
 
 <b> Feedback from stakeholder meeting:
